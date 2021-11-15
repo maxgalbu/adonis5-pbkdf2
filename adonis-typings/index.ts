@@ -2,8 +2,8 @@ declare module '@ioc:Adonis/Core/Hash' {
     export type Pbkdf2Config = {
         driver: 'pbkdf2'
         iterations: number
-        saltLength: number
-        keyLength: number
+        saltSize: number
+        digest: "sha1" | "sha256" | "sha512",
     }
 
     /**

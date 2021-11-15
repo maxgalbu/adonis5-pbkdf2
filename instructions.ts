@@ -13,8 +13,8 @@ import { parse as parseEditorConfig } from 'editorconfig'
 
 type InstructionsState = {
     iterations: number
-    saltLength: number
-    keyLength: number
+    saltSize: number
+    digest: 'sha1' | 'sha256' | 'sha512'
 }
 
 /**
@@ -72,21 +72,21 @@ async function editContract(
     const hashContractFile = project.getSourceFileOrThrow(contractPath)
 
     //Doesn't work without single quotes wrapping the module name
-    const hashModule = hashContractFile?.getModuleOrThrow("'@ioc:Adonis/Core/Hash'");
+    const hashModule = hashContractFile?.getModuleOrThrow("'@ioc:Adonis/Core/Hash'")
 
-    const hashersInterface = hashModule.getInterfaceOrThrow('HashersList');
+    const hashersInterface = hashModule.getInterfaceOrThrow('HashersList')
 
     //Remove pbkdf2 hasher, if already present
-    hashersInterface.getProperty("pbkdf2")?.remove();
+    hashersInterface.getProperty('pbkdf2')?.remove()
 
     //Insert pbkdf2 hasher in last position
     hashersInterface.addProperty({
-        name: "pbkdf2",
+        name: 'pbkdf2',
         type: `{
             implementation: Pbkdf2Contract,
             config: Pbkdf2Config,
         }`,
-    });
+    })
 
     hashContractFile.formatText()
     await hashContractFile?.save()
@@ -127,8 +127,8 @@ async function editConfig(
         initializer: Writers.object({
             driver: '"pbkdf2"',
             iterations: `${state.iterations}`,
-            saltLength: `${state.saltLength}`,
-            keyLength: `${state.keyLength}`,
+            saltSize: `${state.saltSize}`,
+            digest: `"${state.digest}"`,
         }),
     })
 
@@ -145,45 +145,48 @@ async function getIterations(sink: typeof sinkStatic, state: InstructionsState):
     return sink
         .getPrompt()
         .ask(
-            'Enter the number of iterations you want to do (equal or more than 10)',
+            `Enter the number of iterations you want to do (should be equal or more than ${state.iterations})`,
             {
                 default: state.iterations.toString(),
                 validate(value) {
-                    const num = parseInt(value);
-                    return !isNaN(num) && num >= 10;
+                    const num = parseInt(value)
+                    return !isNaN(num);
                 },
             }
         )
 }
 
-async function getSaltLength(sink: typeof sinkStatic, state: InstructionsState): Promise<number> {
-    return sink
-        .getPrompt()
-        .ask(
-            'Enter the length of the generated salt (more than 16 bytes)',
-            {
-                default: state.saltLength.toString(),
-                validate(value) {
-                    const num = parseInt(value);
-                    return !isNaN(num) && num >= 16;
-                },
-            }
-        )
+async function getSaltSize(sink: typeof sinkStatic, state: InstructionsState): Promise<number> {
+    return sink.getPrompt().ask('Enter the size of the generated salt (more than 16 bytes)', {
+        default: state.saltSize.toString(),
+        validate(value) {
+            const num = parseInt(value)
+            return !isNaN(num) && num >= state.saltSize
+        },
+    })
 }
 
-async function getKeyLength(sink: typeof sinkStatic, state: InstructionsState): Promise<number> {
-    return sink
-        .getPrompt()
-        .ask(
-            'Enter length of the key (more than 256 bytes)',
+async function getDigest(
+    sink: typeof sinkStatic,
+    state: InstructionsState
+): Promise<'sha1' | 'sha256' | 'sha512'> {
+    return sink.getPrompt().choice(
+        'Choose the digest algorithm to be used',
+        [
             {
-                default: state.keyLength.toString(),
-                validate(value) {
-                    const num = parseInt(value);
-                    return !isNaN(num) && num >= 256;
-                },
-            }
-        )
+                name: 'sha1',
+            },
+            {
+                name: 'sha256',
+            },
+            {
+                name: 'sha512',
+            },
+        ],
+        {
+            default: state.digest,
+        }
+    )
 }
 
 /**
@@ -195,14 +198,14 @@ export default async function instructions(
     sink: typeof sinkStatic
 ) {
     const state: InstructionsState = {
-        iterations: 10,
-        saltLength: 32,
-        keyLength: 256,
+        iterations: 25000,
+        saltSize: 32,
+        digest: 'sha256',
     }
 
-    state.iterations = await getIterations(sink, state);
-    state.saltLength = await getSaltLength(sink, state);
-    state.keyLength = await getKeyLength(sink, state);
+    state.iterations = await getIterations(sink, state)
+    state.saltSize = await getSaltSize(sink, state)
+    state.digest = await getDigest(sink, state)
 
     /**
      * Make contract file

@@ -65,5 +65,8 @@
     "providers": [
       "adonis5-pbkdf2"
     ]
+  },
+  "dependencies": {
+    "@phc/pbkdf2": "^1.1.14"
   }
 }
