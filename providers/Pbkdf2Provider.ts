@@ -1,8 +1,7 @@
 'use strict'
 
 import { ApplicationContract } from '@ioc:Adonis/Core/Application';
-import { Pbkdf2Config } from '@ioc:Adonis/Core/Hash';
-import { Pbkdf2Hasher } from '../lib/Hashers/Pbkdf2Hasher';
+import { HashContract, Pbkdf2Config } from '@ioc:Adonis/Core/Hash';
 
 export default class JwtProvider {
     constructor(protected app: ApplicationContract) {}
@@ -15,10 +14,11 @@ export default class JwtProvider {
      * @return {void}
      */
     public async register() {
+        const { Pbkdf2Hasher } = await import('../lib/Hashers/Pbkdf2Hasher');
         const Hash = this.app.container.resolveBinding('Adonis/Core/Hash')
 
-        Hash.extend('pbkdf2', (_hash: any, config: Pbkdf2Config) => {
-            return new Pbkdf2Hasher(config) as any;
+        Hash.extend('pbkdf2', (_hash: HashContract, _driver: string, config: Pbkdf2Config) => {
+            return new Pbkdf2Hasher(config);
         })
     }
 }
