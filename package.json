@@ -55,9 +55,10 @@
     "anyBranch": false
   },
   "files": [
-    "build/src",
-    "build/index.d.ts",
-    "build/index.js"
+    "build/adonis-typings",
+    "build/lib",
+    "build/providers",
+    "build/instructions.js"
   ],
   "adonisjs": {
     "instructions": "./build/instructions.js",
