@@ -175,7 +175,7 @@ async function getKeyLength(sink: typeof sinkStatic, state: InstructionsState): 
     return sink
         .getPrompt()
         .ask(
-            'Enter lenght of the key (more than 256 bytes)',
+            'Enter length of the key (more than 256 bytes)',
             {
                 default: state.keyLength.toString(),
                 validate(value) {
